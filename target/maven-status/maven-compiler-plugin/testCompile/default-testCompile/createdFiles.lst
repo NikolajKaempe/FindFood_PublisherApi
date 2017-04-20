@@ -1,0 +1,5 @@
+AllergyRepositoryTest.class
+RecipeTypeRepositoryTest.class
+IngredientRepositoryTest.class
+MenuRepositoryTest.class
+RecipeRepositoryTest.class
