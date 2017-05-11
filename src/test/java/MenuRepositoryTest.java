@@ -14,6 +14,7 @@ import java.util.Collection;
  */
 public class MenuRepositoryTest
 {
+    /*
     public final static String DB_URL = "jdbc:mysql://80.255.6.114:3306/AirshipOne";
     public final static String DB_USER = "AirshipOneUser";
     public final static String DB_PASS = "123456";

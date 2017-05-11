@@ -21,14 +21,15 @@ public class RecipeRepository implements IRecipeRepository {
     }
 
     @Override
-    public Collection<Recipe> getAll() {
+    public Collection<Recipe> getAll(String publisherId) {
         Collection<Recipe> recipes;
         String sql =
-                "SELECT recipeId, recipeName, recipeDescription, recipeImageFilePath " +
-                        "FROM Recipes";
+                "SELECT recipeId, recipeName, recipeDescription, recipeImageFilePath, publisherName, published, publisherId " +
+                        "FROM Recipes WHERE publisherId = :publisherId";
         try{
             Connection con = sql2o.open();
             recipes = con.createQuery(sql)
+                    .addParameter("publisherId",publisherId)
                     .executeAndFetch(Recipe.class);
             recipes.forEach(recipe -> recipe.setRecipeType(this.getRecipeTypeFor(recipe.getRecipeId())));
             recipes.forEach(recipe -> recipe.setMeasuredIngredients(this.getMeasuredIngredientsFor(recipe.getRecipeId())));
@@ -41,13 +42,17 @@ public class RecipeRepository implements IRecipeRepository {
     }
 
     @Override
-    public Recipe get(int id) {
+    public Recipe get(int id, String publisherId) {
         if (!this.exists(id)){
             throw new IllegalArgumentException("No recipe found with id " + id);
         }
+        if(!isPublishersRecipe(id,publisherId)){
+            throw new IllegalArgumentException("Recipe not owned by the publisher that is logged in");
+        }
+
         Recipe recipe;
         String sql =
-                "SELECT recipeId, recipeName, recipeDescription, recipeImageFilePath " +
+                "SELECT recipeId, recipeName, recipeDescription, recipeImageFilePath, publisherName, published, publisherId " +
                         "FROM Recipes WHERE recipeId = :id";
         try{
             Connection con = sql2o.open();
@@ -70,8 +75,8 @@ public class RecipeRepository implements IRecipeRepository {
         Collection<Integer> allergyRelations = new HashSet<>();
         this.failIfInvalid(model);
         String sql =
-                "INSERT INTO Recipes (recipeName, recipeDescription, recipeImageFilePath, recipeTypeId) " +
-                        "VALUES (:recipeName, :recipeDescription, :recipeImageFilePath, :recipeTypeId)";
+                "INSERT INTO Recipes (recipeName, recipeDescription, recipeImageFilePath, recipeTypeId, published, publisherName, publisherId) " +
+                        "VALUES (:recipeName, :recipeDescription, :recipeImageFilePath, :recipeTypeId, :published, :publisherName, :publisherId)";
         String sqlIngredientRelations =
                 "INSERT INTO MeasuredIngredients (recipeId, ingredientId, amount, measure) " +
                         "VALUES (:recipeId, :ingredientId, :amount, :measure)";
@@ -89,6 +94,7 @@ public class RecipeRepository implements IRecipeRepository {
             id = Integer.parseInt(con.createQuery(sql, true)
                     .bind(model)
                     .addParameter("recipeTypeId",model.getRecipeType().getRecipeTypeId())
+                    .addParameter("published",false)
                     .executeUpdate().getKey().toString());
             model.getMeasuredIngredients().forEach(ingredient ->
                     con.createQuery(sqlIngredientRelations)
@@ -123,6 +129,13 @@ public class RecipeRepository implements IRecipeRepository {
         if (!this.exists(model.getRecipeId())){
             throw new IllegalArgumentException("No recipe found with id: " + model.getRecipeId());
         }
+        if(!this.isPublishersRecipe(model.getRecipeId(),model.getPublisherId())){
+            throw new IllegalArgumentException("Recipe not owned by the publisher that is logged in");
+        }
+        if(this.isPublished(model.getRecipeId())){
+            throw new IllegalArgumentException("Cannot update a published recipe");
+        }
+
         this.failIfInvalid(model);
 
         Collection<Integer> allergyRelations = new HashSet<>();
@@ -131,12 +144,12 @@ public class RecipeRepository implements IRecipeRepository {
                 "UPDATE Recipes SET " +
                         "recipeName = :recipeName, " +
                         "recipeDescription = :recipeDescription, " +
-                        "recipeImageFilePath = :recipeImageFilePath " +
-                        "WHERE recipeId = :recipeId";
-        String sqlRecipeType =
-                "UPDATE Recipes SET " +
+                        "recipeImageFilePath = :recipeImageFilePath, " +
+                        "published = :published, " +
+                        "publisherName = :publisherName, " +
+                        "publisherId = :publisherId, " +
                         "recipeTypeId = :recipeTypeId " +
-                        "WHERE recipeId = :id";
+                        "WHERE recipeId = :recipeId";
 
         String sqlIngredientRelationsToDelete =
                 "DELETE FROM MeasuredIngredients WHERE " +
@@ -162,11 +175,9 @@ public class RecipeRepository implements IRecipeRepository {
             Connection con = sql2o.beginTransaction();
             con.createQuery(sql)
                     .bind(model)
-                    .addParameter("recipeId",model.getRecipeId())
-                    .executeUpdate();
-            con.createQuery(sqlRecipeType)
+                    .addParameter("published",false)
                     .addParameter("recipeTypeId",model.getRecipeType().getRecipeTypeId())
-                    .addParameter("id",model.getRecipeId())
+                    .addParameter("recipeId",model.getRecipeId())
                     .executeUpdate();
             con.createQuery(sqlIngredientRelationsToDelete)
                     .addParameter("id",model.getRecipeId())
@@ -202,22 +213,39 @@ public class RecipeRepository implements IRecipeRepository {
     }
 
     @Override
-    public boolean delete(int id) {
+    public boolean delete(int id, String publisherId) {
         if (!this.exists(id)){
             throw new IllegalArgumentException("No Recipe found with id: " + id);
         }
+        if(!this.isPublishersRecipe(id,publisherId)){
+            throw new IllegalArgumentException("Recipe not owned by the publisher that is logged in");
+        }
+        if(this.isPublished(id)){
+            throw new IllegalArgumentException("Cannot delete a published recipe");
+        }
+
         failDeleteIfRelationsExist(id);
         Connection con;
-        String sqlRelationsToDelete =
+
+        String sqlIngredientRelationsToDelete =
                 "DELETE FROM MeasuredIngredients WHERE " +
+                        "recipeId = :id";
+
+        String sqlAllergyRelationsToDelete =
+                "DELETE FROM RecipeAllergies WHERE " +
                         "recipeId = :id";
 
         String sql =
                 "DELETE FROM Recipes WHERE " +
                         "recipeId = :id ";
+
+
         try{
             con = sql2o.beginTransaction();
-            con.createQuery(sqlRelationsToDelete)
+            con.createQuery(sqlIngredientRelationsToDelete)
+                    .addParameter("id",id)
+                    .executeUpdate();
+            con.createQuery(sqlAllergyRelationsToDelete)
                     .addParameter("id",id)
                     .executeUpdate();
             con.createQuery(sql)
@@ -275,6 +303,12 @@ public class RecipeRepository implements IRecipeRepository {
             if (!this.isRecipeTypeValid(recipe.getRecipeType().getRecipeTypeId()))
             {
                 throw new IllegalArgumentException("Parameter `recipeType` dos'ent exist");
+            }
+            if(recipe.getPublisherName() == null || recipe.getPublisherName() == ""){
+                throw new IllegalArgumentException("invalid publisher");
+            }
+            if(recipe.getPublisherId() == null || recipe.getPublisherId() == ""){
+                throw new IllegalArgumentException("invalid publisherId");
             }
             for (MeasuredIngredient measuredIngredient : recipe.getMeasuredIngredients()){
                 if (measuredIngredient.getAmount() <= 0){
@@ -421,6 +455,51 @@ public class RecipeRepository implements IRecipeRepository {
             return false;
         }catch (Exception e)
         {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isPublished(int id) {
+        Recipe recipe;
+
+        String sql = "SELECT recipeId " +
+                "FROM Recipes " +
+                "WHERE recipeId = :id " +
+                "AND published = 1";
+        try{
+            Connection con = sql2o.open();
+            recipe = con.createQuery(sql)
+                    .addParameter("id",id)
+                    .executeAndFetchFirst(Recipe.class);
+            if (recipe != null) return true;
+            return false;
+        }catch (Exception e)
+        {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isPublishersRecipe(int id, String publisherId){
+        Recipe recipe;
+
+        String sql = "SELECT recipeId " +
+                "FROM Recipes " +
+                "WHERE recipeTypeId = :id " +
+                "AND publisherId = :publisherId";
+        try{
+            Connection con = sql2o.open();
+            recipe = con.createQuery(sql)
+                    .addParameter("id",id)
+                    .addParameter("publisherId",publisherId)
+                    .executeAndFetchFirst(Recipe.class);
+            if (recipe != null) return true;
+            return false;
+        }catch (Exception e)
+        {
+            e.printStackTrace();
             return false;
         }
     }

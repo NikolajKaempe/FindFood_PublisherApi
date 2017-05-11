@@ -12,6 +12,9 @@ public class Recipe {
     private String recipeDescription;
     private String recipeImageFilePath;
     private RecipeType recipeType;
+    private String published;
+    private String publisherId;
+    private String publisherName;
     private Collection<MeasuredIngredient> measuredIngredients;
 
     public Recipe(){}
@@ -82,5 +85,29 @@ public class Recipe {
 
     public void setMeasuredIngredients(Collection<MeasuredIngredient> measuredIngredients) {
         this.measuredIngredients = measuredIngredients;
+    }
+
+    public String getPublished() {
+        return published;
+    }
+
+    public void setPublished(String published) {
+        this.published = published;
+    }
+
+    public String getPublisherName() {
+        return publisherName;
+    }
+
+    public void setPublisherName(String publisherName) {
+        this.publisherName = publisherName;
+    }
+
+    public String getPublisherId() {
+        return publisherId;
+    }
+
+    public void setPublisherId(String publisherId) {
+        this.publisherId = publisherId;
     }
 }

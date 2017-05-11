@@ -12,7 +12,6 @@ import java.util.Collection;
 
 import static jsonUtil.JsonUtil.fromJson;
 import static jsonUtil.JsonUtil.json;
-import static jsonUtil.JsonUtil.toJson;
 import static spark.Spark.*;
 
 /**
@@ -85,64 +84,10 @@ public class IngredientController
             if (id != 0)
             {
                 res.status(200);
-                return id;
+                return new String("Ingredient has been requested. \nAdmins need to publish it before usable.");
             }
             res.status(400);
             return new String("Ingredient not created");
         }, json());
-
-        put("/ingredients/:id", (req, res) -> {
-            int id ;
-            try{
-                id = Integer.parseInt(req.params(":id"));
-            }catch (Exception e)
-            {
-                res.status(400);
-                return new String("the id must be an integer");
-            }
-            Ingredient ingredient = fromJson(req.body(),Ingredient.class);
-            ingredient.setIngredientId(id);
-            boolean result = ingredientRepository.update(ingredient);
-
-            if (result)
-            {
-                res.status(200);
-                return new String("ingredient " + id + " Updated");
-            }
-            res.status(400);
-            return new String("ingredient not updated");
-        }, json());
-
-        delete("/ingredients/:id", (req, res) -> {
-            int id ;
-            try{
-                id = Integer.parseInt(req.params(":id"));
-            }catch (Exception e)
-            {
-                res.status(400);
-                return new String("the id must be an integer");
-            }
-            boolean result = ingredientRepository.delete(id);
-            if (result)
-            {
-                res.status(200);
-                return result;
-            }
-            res.status(500);
-            return new String("Could not delete ingredient with id " + id);
-        },json());
-
-        before((req,res) -> {
-            //TODO GET VERIFICATION FOR ADMIN/PUBLISHER
-            res.header("MyVal", "Hello World"); // Dummy -> REMOVE
-        });
-
-        after((req, res) -> res.type("application/json"));
-
-        exception(IllegalArgumentException.class, (e, req, res) -> {
-            res.status(400);
-            res.body(toJson(e.getMessage()));
-            res.type("application/json");
-        });
     }
 }

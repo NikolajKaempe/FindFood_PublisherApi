@@ -11,8 +11,6 @@ public interface IRepository<T>
     Collection<T> getAll();
     T get(int id);
     int create(T model);
-    boolean update(T model);
-    boolean delete(int id);
     boolean exists(int id);
     void failIfInvalid(T model);
 }

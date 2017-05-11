@@ -22,7 +22,7 @@ public class AllergyRepository implements IAllergyRepository
         Collection<Allergy> allergies;
         String sql =
                 "SELECT allergyId, allergyName, allergyDescription " +
-                        "FROM Allergies ";
+                    "FROM Allergies WHERE published = 1";
         try{
             Connection con = sql2o.open();
             allergies = con.createQuery(sql)
@@ -37,11 +37,15 @@ public class AllergyRepository implements IAllergyRepository
 
     @Override
     public Allergy get(int id) {
+        if(!this.exists(id)){
+            throw new IllegalArgumentException("No allergy with id " + id + " found.");
+        }
         Allergy allergy;
         String sql =
                 "SELECT allergyId, allergyName, allergyDescription " +
-                        "FROM Allergies " +
-                        "WHERE allergyId = :id";
+                    "FROM Allergies " +
+                        "WHERE allergyId = :id " +
+                        "AND published = 1";
         try{
             Connection con = sql2o.open();
             allergy = con.createQuery(sql)
@@ -61,12 +65,13 @@ public class AllergyRepository implements IAllergyRepository
         int id;
         this.failIfInvalid(model);
         String sql =
-                "INSERT INTO Allergies (allergyName, allergyDescription) " +
-                        "VALUES (:allergyName, :allergyDescription)";
+                "INSERT INTO Allergies (allergyName, allergyDescription, published) " +
+                    "VALUES (:allergyName, :allergyDescription, :published)";
         try{
             Connection con = sql2o.open();
             id = Integer.parseInt(con.createQuery(sql, true)
                     .bind(model)
+                    .addParameter("published",false)
                     .executeUpdate().getKey().toString());
         }catch (Exception e)
         {
@@ -77,60 +82,25 @@ public class AllergyRepository implements IAllergyRepository
     }
 
     @Override
-    public boolean update(Allergy model) {
-        if (!this.exists(model.getAllergyId())){
-            throw new IllegalArgumentException("No allergy found with id: " + model.getAllergyId());
-        }
-        this.failIfInvalid(model);
-        String sql =
-                "UPDATE Allergies SET " +
-                        "allergyName = :allergyName, " +
-                        "allergyDescription = :allergyDescription " +
-                        "WHERE allergyId = :allergyId";
-        try{
-            Connection con = sql2o.open();
-            con.createQuery(sql)
-                    .bind(model)
-                    .executeUpdate();
-            return true;
-        }catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    @Override
-    public boolean delete(int id) {
-        if (!this.exists(id)){
-            throw new IllegalArgumentException("No allergy found with id: " + id);
-        }
-        failDeleteIfRelationsExist(id);
-
-        String sql =
-                "DELETE FROM Allergies " +
-                        "WHERE AllergyId = :id";
-        try{
-            Connection con = sql2o.open();
-            con.createQuery(sql)
-                    .addParameter("id",id)
-                    .executeUpdate();
-            return true;
-        }catch (Exception e)
-        {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    @Override
     public boolean exists(int id)
     {
-        Allergy model = this.get(id);
-        if (model == null){
+        Allergy model;
+        String sql =
+                "SELECT allergyId FROM Allergies " +
+                    "WHERE allergyId = :id " +
+                    "AND published = 1";
+        try{
+            Connection con = sql2o.open();
+            model = con.createQuery(sql)
+                    .addParameter("id",id)
+                    .executeAndFetchFirst(Allergy.class);
+            if (model != null) return true;
+            return false;
+        }catch (Exception e)
+        {
+            e.printStackTrace();
             return false;
         }
-        return true;
     }
 
     @Override
@@ -146,24 +116,5 @@ public class AllergyRepository implements IAllergyRepository
         if (model.getAllergyDescription() == null || model.getAllergyDescription().length() < 1) {
             throw new IllegalArgumentException("Parameter `description` cannot be empty");
         }
-    }
-
-    @Override
-    public void failDeleteIfRelationsExist(int id)
-    {
-        Collection<Integer> relations;
-        String sql = "SELECT allergyId " +
-                "FROM IngredientAllergies " +
-                "WHERE allergyId = :id";
-        try{
-            Connection con = sql2o.open();
-            relations = con.createQuery(sql)
-                    .addParameter("id",id)
-                    .executeAndFetch(Integer.class);
-        }catch (Exception e)
-        {
-            throw new IllegalArgumentException("Allergy not deleted. Problems with ingredients associations");
-        }
-        if (relations.size() < 1) throw new IllegalArgumentException("Allergy not deleted. Used in one or more ingredients");
     }
 }

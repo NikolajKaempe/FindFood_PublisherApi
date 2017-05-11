@@ -15,7 +15,9 @@ C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\models\Menu.jav
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\repositories\repositoryInterfaces\IRecipeRepository.java
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\repositories\IngredientRepository.java
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\models\wrapper_models\RecipeTypes.java
+C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\models\wrapper_models\MeasuredIngredients.java
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\models\MealType.java
+C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\firebaseFiles\User.java
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\controllers\AllergyController.java
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\controllers\RecipeTypeController.java
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\repositories\AllergyRepository.java
@@ -25,6 +27,7 @@ C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\repositories\re
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\repositories\repositoryInterfaces\IRepository.java
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\controllers\MealTypeController.java
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\Main.java
+C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\firebaseFiles\FireBaseDatabase.java
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\repositories\MenuRepository.java
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\models\MeasuredIngredient.java
 C:\Users\Kaempe\IdeaProjects\FindFood_PublisherApi\src\main\java\repositories\MealTypeRepository.java

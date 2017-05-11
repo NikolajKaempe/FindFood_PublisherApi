@@ -12,6 +12,5 @@ public interface IIngredientRepository extends IRepository<Ingredient>
 {
 
     Collection<Allergy> getAllergiesFor(int id);
-    void failDeleteIfRelationsExist(int id);
     boolean isRelationValid(int id);
 }

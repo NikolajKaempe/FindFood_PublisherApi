@@ -22,7 +22,7 @@ public class IngredientRepository implements IIngredientRepository
         Collection<Ingredient> ingredients;
         String sql =
                 "SELECT ingredientId, ingredientName, ingredientDescription " +
-                    "FROM Ingredients";
+                    "FROM Ingredients WHERE published = 1";
         try{
             Connection con = sql2o.open();
             ingredients = con.createQuery(sql)
@@ -44,8 +44,9 @@ public class IngredientRepository implements IIngredientRepository
         Ingredient ingredient;
         String sql =
                 "SELECT ingredientId, ingredientName, ingredientDescription " +
-                        "FROM Ingredients " +
-                        "WHERE ingredientId = :id";
+                    "FROM Ingredients " +
+                        "WHERE ingredientId = :id " +
+                        "AND published = 1";
         try{
             Connection con = sql2o.open();
             ingredient = con.createQuery(sql)
@@ -65,15 +66,16 @@ public class IngredientRepository implements IIngredientRepository
         int id;
         failIfInvalid(model);
         String sql =
-                "INSERT INTO Ingredients (ingredientName, ingredientDescription) " +
-                        "VALUES (:ingredientName, :ingredientDescription)";
+                "INSERT INTO Ingredients (ingredientName, ingredientDescription, published) " +
+                    "VALUES (:ingredientName, :ingredientDescription, :published)";
         String sqlRelations =
                 "INSERT INTO IngredientAllergies (allergyId, ingredientId) " +
-                        "VALUES (:allergyId, :id )";
+                    "VALUES (:allergyId, :id )";
         try{
             Connection con = sql2o.beginTransaction();
             id = Integer.parseInt(con.createQuery(sql, true)
                     .bind(model)
+                    .addParameter("published",false)
                     .executeUpdate().getKey().toString());
             model.getAllergies().forEach(allergy ->
                     con.createQuery(sqlRelations)
@@ -91,84 +93,12 @@ public class IngredientRepository implements IIngredientRepository
     }
 
     @Override
-    public boolean update(Ingredient model)
-    {
-        if (!this.exists(model.getIngredientId())){
-            throw new IllegalArgumentException("No ingredient found with id: " + model.getIngredientId());
-        }
-        failIfInvalid(model);
-
-        String sql =
-                "UPDATE Ingredients SET " +
-                        "ingredientName = :ingredientName, " +
-                        "ingredientDescription = :ingredientDescription " +
-                        "WHERE ingredientId = :ingredientId";
-        String sqlRelationsToDelete =
-                "DELETE FROM IngredientAllergies WHERE " +
-                        "ingredientId = :id";
-        String sqlRelationsToUpdate =
-                "INSERT INTO IngredientAllergies (allergyId, ingredientId) " +
-                "VALUES (:allergyId, :id )";
-        try{
-            Connection con = sql2o.beginTransaction();
-            con.createQuery(sql)
-                    .bind(model)
-                    .executeUpdate();
-            con.createQuery(sqlRelationsToDelete)
-                    .addParameter("id",model.getIngredientId())
-                    .executeUpdate();
-            model.getAllergies().forEach(allergy ->
-                con.createQuery(sqlRelationsToUpdate)
-                        .addParameter("allergyId",allergy.getAllergyId())
-                        .addParameter("id",model.getIngredientId())
-                        .executeUpdate());
-            con.commit();
-            return true;
-        }catch (Exception e)
-        {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    @Override
-    public boolean delete(int id)
-    {
-        if (!this.exists(id)){
-            throw new IllegalArgumentException("No Ingredient found with id: " + id);
-        }
-        failDeleteIfRelationsExist(id);
-        Connection con;
-        String sqlRelationsToDelete =
-                "DELETE FROM IngredientAllergies WHERE " +
-                        "ingredientId = :id";
-
-        String sql =
-               "DELETE FROM Ingredients WHERE " +
-                        "ingredientId = :id ";
-        try{
-            con = sql2o.beginTransaction();
-            con.createQuery(sqlRelationsToDelete)
-                    .addParameter("id",id)
-                    .executeUpdate();
-            con.createQuery(sql)
-                     .addParameter("id",id)
-                    .executeUpdate();
-            con.commit();
-            return true;
-        }catch (Exception e)
-        {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    @Override
     public boolean exists(int id)
     {
         String sql =
                 "SELECT ingredientId FROM Ingredients " +
-                        "WHERE ingredientId = :id";
+                    "WHERE ingredientId = :id " +
+                    "AND published = 1";
         try{
             Connection con = sql2o.open();
             Ingredient ingredient = con.createQuery(sql)
@@ -240,7 +170,8 @@ public class IngredientRepository implements IIngredientRepository
         int id;
         String sql =
                 "SELECT allergyId FROM Allergies " +
-                        "WHERE allergyId = :id";
+                    "WHERE allergyId = :id " +
+                    "AND published = 1";
         try{
             Connection con = sql2o.open();
             id = con.createQuery(sql)
@@ -252,25 +183,5 @@ public class IngredientRepository implements IIngredientRepository
         {
             return false;
         }
-    }
-
-    @Override
-    public void failDeleteIfRelationsExist(int id)
-    {
-        Collection<Integer> relations;
-        String sql = "SELECT ingredientId " +
-                "FROM MeasuredIngredients " +
-                "WHERE ingredientId = :id" +
-                ")";
-        try{
-            Connection con = sql2o.open();
-            relations = con.createQuery(sql)
-                    .addParameter("id",id)
-                    .executeAndFetch(Integer.class);
-        }catch (Exception e)
-        {
-            throw new IllegalArgumentException("Ingredient not deleted. Problems with Recipe associations");
-        }
-        if (!relations.isEmpty()) throw new IllegalArgumentException("Ingredient not deleted. Used in one or more Recipes");
     }
 }

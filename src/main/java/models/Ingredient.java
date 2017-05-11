@@ -15,7 +15,6 @@ public class Ingredient
     private Collection<Allergy> allergies;
 
     public Ingredient(){
-        this.allergies = new ArrayList<>();
     }
 
     public Ingredient(String name, String description){
@@ -26,7 +25,6 @@ public class Ingredient
         this.ingredientId = id;
         this.ingredientName = name;
         this.ingredientDescription = description;
-        this.allergies = new ArrayList<>();
     }
 
     public int getIngredientId() {

@@ -25,7 +25,9 @@ public class RecipeTypeRepository implements IRecipeTypeRepository{
         Collection<RecipeType> recipeTypes;
         String sql =
                 "SELECT recipeTypeId, recipeTypeName " +
-                    "FROM RecipeTypes ";
+                    "FROM RecipeTypes " +
+                    "WHERE published = 1";
+
         try{
             Connection con = sql2o.open();
             recipeTypes = con.createQuery(sql)
@@ -48,7 +50,7 @@ public class RecipeTypeRepository implements IRecipeTypeRepository{
         String sql =
                 "SELECT recipeTypeId, recipeTypeName " +
                     "FROM RecipeTypes " +
-                    "WHERE recipeTypeId = :id";
+                        "WHERE recipeTypeId = :id ";
         try{
             Connection con = sql2o.open();
             recipeType = con.createQuery(sql)
@@ -67,12 +69,13 @@ public class RecipeTypeRepository implements IRecipeTypeRepository{
         int id;
         failIfInvalid(model);
         String sql =
-                "INSERT INTO RecipeTypes (recipeTypeName) " +
-                        "VALUES (:recipeTypeName)";
+                "INSERT INTO RecipeTypes (recipeTypeName, published) " +
+                        "VALUES (:recipeTypeName, :published)";
         try{
             Connection con = sql2o.open();
             id = Integer.parseInt(con.createQuery(sql, true)
                     .bind(model)
+                    .addParameter("published",false)
                     .executeUpdate().getKey().toString());
         }catch (Exception e)
         {
@@ -83,58 +86,13 @@ public class RecipeTypeRepository implements IRecipeTypeRepository{
     }
 
     @Override
-    public boolean update(RecipeType model) {
-        if (!this.exists(model.getRecipeTypeId())){
-            throw new IllegalArgumentException("No RecipeType found with id " + model.getRecipeTypeId());
-        }
-        failIfInvalid(model);
-        String sql =
-                "UPDATE RecipeTypes SET " +
-                        "recipeTypeName = :recipeTypeName " +
-                        "WHERE recipeTypeId = :recipeTypeId";
-        try{
-            Connection con = sql2o.open();
-            con.createQuery(sql)
-                    .bind(model)
-                    .executeUpdate();
-            return true;
-        }catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    @Override
-    public boolean delete(int id) {
-        if (!this.exists(id)){
-            throw new IllegalArgumentException("No recipeType found with id " + id);
-        }
-        failDeleteIfRelationsExist(id);
-
-        String sql =
-                "DELETE FROM RecipeTypes " +
-                        "WHERE recipeTypeId = :id";
-        try{
-            Connection con = sql2o.open();
-            con.createQuery(sql)
-                    .addParameter("id",id)
-                    .executeUpdate();
-            return true;
-        }catch (Exception e)
-        {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    @Override
     public boolean exists(int id) {
         RecipeType recipeType;
 
         String sql = "SELECT recipeTypeId " +
                 "FROM RecipeTypes " +
-                "WHERE recipeTypeId = :id";
+                    "WHERE recipeTypeId = :id " +
+                    "AND published = 1";
         try{
             Connection con = sql2o.open();
             recipeType = con.createQuery(sql)
@@ -159,24 +117,5 @@ public class RecipeTypeRepository implements IRecipeTypeRepository{
         if (recipeType.getRecipeTypeName() == null || recipeType.getRecipeTypeName().length() < 1) {
             throw new IllegalArgumentException("Parameter `name` cannot be empty");
         }
-    }
-
-    @Override
-    public void failDeleteIfRelationsExist(int id)
-    {
-        Collection<Integer> relations;
-        String sql = "SELECT recipeTypeId " +
-                "FROM Recipes " +
-                "WHERE recipeTypeId = :id";
-        try{
-            Connection con = sql2o.open();
-            relations = con.createQuery(sql)
-                    .addParameter("id",id)
-                    .executeAndFetch(Integer.class);
-        }catch (Exception e)
-        {
-            throw new IllegalArgumentException("RecipeType not deleted. Problems with Recipe associations");
-        }
-        if (!relations.isEmpty()) throw new IllegalArgumentException("RecipeType not deleted. Used in one or more Recipes");
     }
 }

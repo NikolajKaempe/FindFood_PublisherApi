@@ -10,10 +10,8 @@ import java.util.Collection;
 
 import static jsonUtil.JsonUtil.fromJson;
 import static jsonUtil.JsonUtil.json;
-import static jsonUtil.JsonUtil.toJson;
 import static spark.Spark.*;
 import static spark.Spark.after;
-import static spark.Spark.exception;
 
 /**
  * Created by Kaempe on 19-03-2017.
@@ -64,64 +62,10 @@ public class MealTypeController
             if (id != 0)
             {
                 res.status(200);
-                return id;
+                return new String("MealType has been requested. \nAdmins need to publish it before usable.");
             }
             res.status(400);
             return new String("mealType not created");
         }, json());
-
-        put("/mealTypes/:id", (req, res) -> {
-            int id ;
-            try{
-                id = Integer.parseInt(req.params(":id"));
-            }catch (Exception e)
-            {
-                res.status(400);
-                return new String("the id must be an integer");
-            }
-            MealType mealType = fromJson(req.body(),MealType.class);
-            mealType.setMealTypeId(id);
-            boolean result = mealTypeRepository.update(mealType);
-
-            if (result)
-            {
-                res.status(200);
-                return new String("mealType " + id + " Updated");
-            }
-            res.status(400);
-            return new String("mealtype not updated");
-        }, json());
-
-        delete("/mealTypes/:id", (req, res) -> {
-            int id ;
-            try{
-                id = Integer.parseInt(req.params(":id"));
-            }catch (Exception e)
-            {
-                res.status(400);
-                return new String("the id must be an integer");
-            }
-            boolean result = mealTypeRepository.delete(id);
-            if (result)
-            {
-                res.status(200);
-                return result;
-            }
-            res.status(500);
-            return new String("Could not delete mealType with id " + id);
-        },json());
-
-        before((req,res) -> {
-            //TODO GET VERIFICATION FOR ADMIN/PUBLISHER
-            res.header("MyVal", "Hello World"); // Dummy -> REMOVE
-        });
-
-        after((req, res) -> res.type("application/json"));
-
-        exception(IllegalArgumentException.class, (e, req, res) -> {
-            res.status(400);
-            res.body(toJson(e.getMessage()));
-            res.type("application/json");
-        });
     }
 }

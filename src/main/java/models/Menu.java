@@ -12,6 +12,9 @@ public class Menu
     private String menuDescription;
     private String menuImageFilePath;
     private MealType mealType;
+    private String published;
+    private String publisherId;
+    private String publisherName;
     private Collection<Recipe> recipes;
 
     public Menu(){}
@@ -82,5 +85,29 @@ public class Menu
 
     public void setRecipes(Collection<Recipe> recipes) {
         this.recipes = recipes;
+    }
+
+    public String getPublished() {
+        return published;
+    }
+
+    public void setPublished(String published) {
+        this.published = published;
+    }
+
+    public String getPublisherId() {
+        return publisherId;
+    }
+
+    public void setPublisherId(String publisherId) {
+        this.publisherId = publisherId;
+    }
+
+    public String getPublisherName() {
+        return publisherName;
+    }
+
+    public void setPublisherName(String publisherName) {
+        this.publisherName = publisherName;
     }
 }

@@ -7,5 +7,4 @@ import models.MealType;
  */
 public interface IMealTypeRepository extends IRepository<MealType>
 {
-    void failDeleteIfRelationsExist(int id);
 }

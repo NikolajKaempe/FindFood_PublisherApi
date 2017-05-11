@@ -98,5 +98,10 @@
             <artifactId>slf4j-simple</artifactId>
             <version>1.6.4</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.firebase</groupId>
+            <artifactId>firebase-admin</artifactId>
+            <version>4.1.7</version>
+        </dependency>
     </dependencies>
 </project>

@@ -12,6 +12,12 @@ public class MeasuredIngredient
 
     public MeasuredIngredient(){}
 
+    public MeasuredIngredient(double amount, String measure, int ingredientId){
+        this.ingredient = new Ingredient(ingredientId,"","");
+        this.amount = amount;
+        this.measure = measure;
+    }
+
     public MeasuredIngredient(double amount, String measure, Ingredient ingredient){
         this.ingredient = ingredient;
         this.amount = amount;
